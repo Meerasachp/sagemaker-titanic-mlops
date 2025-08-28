@@ -1,4 +1,4 @@
-# sagemaker-titanic-mlops
+# SageMaker-Titanic-ML Ops
 
 This project demonstrates an end-to-end **MLOps pipeline** on AWS SageMaker using the Titanic dataset.  
 It includes:
