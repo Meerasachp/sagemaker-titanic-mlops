@@ -42,7 +42,7 @@ sagemaker-titanic-mlops/
 │ ├── training/ # Model training scripts
 │ └── deployment/ # Model deployment configs
 ├── requirements.txt # Dependencies
-└── README.md # Project documentation
+└── README.md 
 
 
 ---
