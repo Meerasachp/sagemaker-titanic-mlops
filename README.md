@@ -34,6 +34,7 @@ The goal is to build a reproducible, automated pipeline that handles data ingest
 ---
 
 ## 📂 Repository Structure
+
 sagemaker-titanic-mlops/
 ├── src/ # Source code
 │ ├── data_ingestion/ # Data preprocessing scripts
