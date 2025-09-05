@@ -34,15 +34,14 @@ The goal is to build a reproducible, automated pipeline that handles data ingest
 ---
 
 ## 📂 Repository Structure
-
 sagemaker-titanic-mlops/
-├── src/ # Source code
-│ ├── data_ingestion/ # Data preprocessing scripts
-│ ├── feature_store/ # Feature store setup
-│ ├── training/ # Model training scripts
-│ └── deployment/ # Model deployment configs
-├── requirements.txt # Dependencies
-└── README.md 
+├── src/                  # Source code
+│   ├── data_ingestion/   # Data preprocessing scripts
+│   ├── feature_store/    # Feature store setup
+│   ├── training/         # Model training scripts
+│   └── deployment/       # Model deployment configs
+├── requirements.txt       # Dependencies
+└── README.md              # Project documentation
 
 
 ---
