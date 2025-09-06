@@ -11,14 +11,14 @@ End-to-end MLOps on **AWS SageMaker** using the Titanic dataset: data → featur
 ## 📌 Phases
 
 ### ✅ Phase 1 – Project Initialization
-- Local env + venv  
-- Repo structure (`src/`, `data/`)  
-- `requirements.txt`, `.gitignore`  
-- AWS creds + SageMaker access  
+-- Local env + venv  
+-- Repo structure (`src/`, `data/`)  
+-- `requirements.txt`, `.gitignore`  
+-- AWS creds + SageMaker access  
 
 
-**Quickstart (Phase 1)**  
-```bash
+## Quickstart (Phase 1)
+
 # Clone the repo
 git clone https://github.com/Meerasachp/sagemaker-titanic-mlops.git
 cd sagemaker-titanic-mlops
@@ -29,91 +29,70 @@ source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
-bash
+
 Copy code
 # Configure AWS
 aws configure
 # Provide IAM user credentials with SageMaker + S3 access
 # Verify default region = us-east-1
-bash
+
 Copy code
 # Prepare project structure
 mkdir data src
 # Place Titanic dataset (train.csv, test.csv) in data/
 
 
-✅ Phase 2 – Feature Store
-Feature Group created (online + offline)
+### ✅ Phase 2 – Feature Store
+-- Feature Group created (online + offline)
+-- Ingestion from data/train.csv
+-- IAM + S3 permissions fixed
+-- Verified rows in Studio Feature Store
 
-Ingestion from data/train.csv
+## Quickstart (Phase 2)
 
-IAM + S3 permissions fixed
-
-Verified rows in Studio Feature Store
-
-Quickstart (Phase 2)
-
-bash
-Copy code
 # Create Feature Group
 python src/feature_store_setup.py
-bash
-Copy code
+
 # Check Feature Group status
 python src/check_feature_group.py
 Confirms FG is ACTIVE
 
 Lists schema + record count
 
-text
-Copy code
 AWS Console → SageMaker → Feature Store → Feature groups  
 Search for titanic-feature-group-* and explore rows (Name, Sex, Age, Ticket, Cabin, etc.)
 
 
-✅ Phase 3 – Training & Deployment (XGBoost)
-Training: Built with SageMaker XGBoost (script mode)
-
-Artifacts: Stored in S3 (model.tar.gz)
-
-Deployment: Real-time endpoint on SageMaker
-
-Prediction: Live inference working
+### ✅ Phase 3 – Training & Deployment (XGBoost)
+-- Training: Built with SageMaker XGBoost (script mode)
+-- Artifacts: Stored in S3 (model.tar.gz)
+-- Deployment: Real-time endpoint on SageMaker
+-- Prediction: Live inference working
 
 Example result:
-
-json
-Copy code
 {"predictions": [{"score": 0.8977}]}
-Quickstart (Phase 3)
 
-bash
-Copy code
+## Quickstart (Phase 3)
 # Train (XGBoost, script mode)
 python src/run_training.py
-bash
-Copy code
+
 # Deploy endpoint
 python src/deploy.py
-bash
-Copy code
+
 # Predict
 python src/predict.py
-bash
-Copy code
+
 # Delete endpoint (stop costs)
 python src/delete_endpoint.py
 
 
 🔜 Phase 4 – Monitoring & CI/CD
-Model Monitor (data/quality/drift)
-
-CI/CD with SageMaker Pipelines & GitHub Actions
-
-Auto retraining triggers
+-- Model Monitor (data/quality/drift)
+-- CI/CD with SageMaker Pipelines & GitHub Actions
+-- Auto retraining triggers
  
 
-📂 Structure
+### 📂 Structure
 css
 Copy code
 sagemaker-titanic-mlops/
@@ -132,17 +111,12 @@ sagemaker-titanic-mlops/
 └── README.md
 
 
-🛠️ Tech
+### 🛠️ Tech
 AWS SageMaker (Feature Store, Training, Endpoints)
-
 XGBoost (1.5+)
-
 Python / Pandas / scikit-learn
-
 S3, IAM, CloudWatch
 
-
-
-👤 Author
+### 👤 Author
 Meerasa (Max) — DevOps/MLOps
 🔗 GitHub
