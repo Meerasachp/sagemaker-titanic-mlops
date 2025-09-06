@@ -1,4 +1,19 @@
-venv/
+# Python
 __pycache__/
-.ipynb_checkpoints/
 *.pyc
+*.pyo
+*.pyd
+*.log
+
+# Virtual environment
+venv/
+.env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# SageMaker / AWS local configs
+*.sagemaker_config.json
+.sagemaker/
+.aws/
+
