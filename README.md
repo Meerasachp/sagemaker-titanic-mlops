@@ -19,27 +19,25 @@ End-to-end MLOps on **AWS SageMaker** using the Titanic dataset: data → featur
 
 ## Quickstart (Phase 1)
 
-# Clone the repo
+Clone the repo
 git clone https://github.com/Meerasachp/sagemaker-titanic-mlops.git
 cd sagemaker-titanic-mlops
 
-# Create virtual env
+Create virtual env
 python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
+Install dependencies
 pip install -r requirements.txt
 
-Copy code
-# Configure AWS
+Configure AWS
 aws configure
-# Provide IAM user credentials with SageMaker + S3 access
-# Verify default region = us-east-1
+Provide IAM user credentials with SageMaker + S3 access
+Verify default region = us-east-1
 
-Copy code
-# Prepare project structure
+Prepare project structure
 mkdir data src
-# Place Titanic dataset (train.csv, test.csv) in data/
+Place Titanic dataset (train.csv, test.csv) in data/
 
 
 ### ✅ Phase 2 – Feature Store
@@ -50,10 +48,10 @@ mkdir data src
 
 ## Quickstart (Phase 2)
 
-# Create Feature Group
+Create Feature Group
 python src/feature_store_setup.py
 
-# Check Feature Group status
+Check Feature Group status
 python src/check_feature_group.py
 Confirms FG is ACTIVE
 
@@ -61,7 +59,6 @@ Lists schema + record count
 
 AWS Console → SageMaker → Feature Store → Feature groups  
 Search for titanic-feature-group-* and explore rows (Name, Sex, Age, Ticket, Cabin, etc.)
-
 
 ### ✅ Phase 3 – Training & Deployment (XGBoost)
 -- Training: Built with SageMaker XGBoost (script mode)
@@ -73,16 +70,16 @@ Example result:
 {"predictions": [{"score": 0.8977}]}
 
 ## Quickstart (Phase 3)
-# Train (XGBoost, script mode)
+Train (XGBoost, script mode)
 python src/run_training.py
 
-# Deploy endpoint
+Deploy endpoint
 python src/deploy.py
 
-# Predict
+Predict
 python src/predict.py
 
-# Delete endpoint (stop costs)
+Delete endpoint (stop costs)
 python src/delete_endpoint.py
 
 
