@@ -30,22 +30,18 @@ jobs:
     permissions: { contents: read }
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install boto3 sagemaker
-
       - name: Configure AWS creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-
       - name: Invoke serverless endpoint
         run: |
           python - <<'PY'
@@ -90,7 +86,6 @@ jobs:
       - name: Run training (XGBoost)
         run: |
           python cicd/train_job.py | tee train_output.txt
-          # extract the artifact line "MODEL_ARTIFACT_S3=s3://.../model.tar.gz"
           ARTIFACT=$(grep -oE 'MODEL_ARTIFACT_S3=s3://[^ ]+' train_output.txt | sed 's/^MODEL_ARTIFACT_S3=//')
           echo "MODEL_ARTIFACT_S3=$ARTIFACT" >> $GITHUB_ENV
       - name: Show model artifact
@@ -130,4 +125,3 @@ jobs:
       - name: Canary deploy (10%)
         run: |
           python cicd/deploy_canary.py
-
