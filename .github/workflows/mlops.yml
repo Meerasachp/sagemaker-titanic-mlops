@@ -2,7 +2,9 @@ name: MLOps Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
   pull_request:
   workflow_dispatch:
     inputs:
@@ -15,7 +17,7 @@ on:
         required: false
         default: "false"
       model_artifact_s3:
-        description: "Model artifact S3 URI (s3://.../model.tar.gz) for canary (optional if run_train=true)"
+        description: "Model artifact S3 URI (required when run_canary=true)"
         required: false
         default: ""
 
@@ -27,11 +29,13 @@ jobs:
   smoke-test:
     name: Smoke Test (invoke endpoint)
     runs-on: ubuntu-latest
-    permissions: { contents: read }
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
@@ -58,11 +62,12 @@ jobs:
           PY
 
   train:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_train == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_train == 'true' }}
     name: Train (manual)
     runs-on: ubuntu-latest
-    needs: [smoke-test]
-    permissions: { contents: read }
+    needs: smoke-test
+    permissions:
+      contents: read
     env:
       SAGEMAKER_ROLE_ARN: ${{ secrets.SAGEMAKER_ROLE_ARN }}
       S3_BUCKET: ${{ secrets.S3_BUCKET }}
@@ -72,7 +77,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
@@ -84,27 +90,30 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
       - name: Run training (XGBoost)
+        id: train
         run: |
           python cicd/train_job.py | tee train_output.txt
           ARTIFACT=$(grep -oE 'MODEL_ARTIFACT_S3=s3://[^ ]+' train_output.txt | sed 's/^MODEL_ARTIFACT_S3=//')
-          echo "MODEL_ARTIFACT_S3=$ARTIFACT" >> $GITHUB_ENV
+          echo "artifact=$ARTIFACT" >> $GITHUB_OUTPUT
       - name: Show model artifact
-        run: echo "Trained model: $MODEL_ARTIFACT_S3"
+        run: echo "Trained model: ${{ steps.train.outputs.artifact }}"
 
   canary-deploy:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_canary == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_canary == 'true' }}
     name: Canary Deploy (manual)
     runs-on: ubuntu-latest
-    needs: [smoke-test]
-    permissions: { contents: read }
+    needs: smoke-test
+    permissions:
+      contents: read
     env:
       SAGEMAKER_ROLE_ARN: ${{ secrets.SAGEMAKER_ROLE_ARN }}
-      MODEL_ARTIFACT_S3: ${{ inputs.model_artifact_s3 != '' && inputs.model_artifact_s3 || env.MODEL_ARTIFACT_S3 }}
+      MODEL_ARTIFACT_S3: ${{ github.event.inputs.model_artifact_s3 }}
       CANARY_WEIGHT: "0.1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
@@ -117,11 +126,12 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Validate model artifact
         run: |
-          if [ -z "${{ env.MODEL_ARTIFACT_S3 }}" ]; then
-            echo "ERROR: MODEL_ARTIFACT_S3 not provided. Supply via workflow input 'model_artifact_s3' or run the Train job first."
+          if [ -z "${MODEL_ARTIFACT_S3}" ]; then
+            echo "ERROR: MODEL_ARTIFACT_S3 is required. Provide it in the workflow input when dispatching canary."
             exit 1
           fi
-          echo "Using MODEL_ARTIFACT_S3=${{ env.MODEL_ARTIFACT_S3 }}"
+          echo "Using MODEL_ARTIFACT_S3=${MODEL_ARTIFACT_S3}"
       - name: Canary deploy (10%)
         run: |
           python cicd/deploy_canary.py
+
