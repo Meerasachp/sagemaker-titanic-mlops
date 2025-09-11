@@ -26,6 +26,11 @@ REGION = os.getenv("AWS_REGION", "us-east-1")
 sess: Session = sagemaker.Session(boto_session=boto3.Session(region_name=REGION))
 sm = boto3.client("sagemaker", region_name=REGION)
 
+# -------- Instance types (override via env if needed) --------
+PROC_INSTANCE_TYPE = os.getenv("PROC_INSTANCE_TYPE", "ml.t3.medium")
+EVAL_INSTANCE_TYPE = os.getenv("EVAL_INSTANCE_TYPE", PROC_INSTANCE_TYPE)
+TRAIN_INSTANCE_TYPE = os.getenv("TRAIN_INSTANCE_TYPE", "ml.c5.large")
+
 
 def infer_role_from_endpoint(endpoint_name: str) -> str:
     ep = sm.describe_endpoint(EndpointName=endpoint_name)
@@ -67,7 +72,7 @@ sk_proc = SKLearnProcessor(
     framework_version="1.2-1",
     role=ROLE_ARN,
     instance_count=1,
-    instance_type="ml.m5.large",
+    instance_type=PROC_INSTANCE_TYPE,  # patched from ml.m5.large
     sagemaker_session=sess,
 )
 
@@ -98,7 +103,7 @@ est = Estimator(
     image_uri=xgb_image,
     role=ROLE_ARN,
     instance_count=1,
-    instance_type="ml.m5.xlarge",
+    instance_type=TRAIN_INSTANCE_TYPE,  # patched from ml.m5.xlarge
     output_path=f"s3://{sess.default_bucket()}/xgb/output/",
     sagemaker_session=sess,
     hyperparameters={
@@ -128,14 +133,14 @@ train_step = TrainingStep(
     cache_config=cache,
 )
 
-# -------- Step: Evaluate (write metrics.json) --------
+# -------- Step: Evaluate (writes metrics.json) --------
 eval_prop = PropertyFile(name="EvalMetrics", output_name="metrics", path="metrics.json")
 
 eval_proc = SKLearnProcessor(
     framework_version="1.2-1",
     role=ROLE_ARN,
     instance_count=1,
-    instance_type="ml.m5.large",
+    instance_type=EVAL_INSTANCE_TYPE,  # patched from ml.m5.large
     sagemaker_session=sess,
 )
 
@@ -172,12 +177,7 @@ metrics = ModelMetrics(
     )
 )
 
-# Use JsonGet to read AUC from the evaluation PropertyFile
-auc_expr = JsonGet(
-    step_name=evaluate_step.name,
-    property_file=eval_prop,
-    json_path="auc"
-)
+auc_expr = JsonGet(step_name=evaluate_step.name, property_file=eval_prop, json_path="auc")
 
 register_step = RegisterModel(
     name="RegisterModel",
@@ -211,4 +211,5 @@ if __name__ == "__main__":
     pipeline.upsert(role_arn=ROLE_ARN)
     execution = pipeline.start()
     print("Started execution:", execution.arn)
+
 
