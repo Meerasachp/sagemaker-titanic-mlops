@@ -9,7 +9,7 @@ from sagemaker.estimator import Estimator
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.parameters import ParameterString, ParameterFloat
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep, CacheConfig
-from sagemaker.workflow.functions import Join
+from sagemaker.workflow.functions import Join, JsonGet
 from sagemaker.workflow.properties import PropertyFile
 from sagemaker.workflow.condition_step import ConditionStep
 from sagemaker.workflow.conditions import ConditionGreaterThan
@@ -28,7 +28,6 @@ sm = boto3.client("sagemaker", region_name=REGION)
 
 
 def infer_role_from_endpoint(endpoint_name: str) -> str:
-    """Infer the execution role from the currently deployed model behind an endpoint."""
     ep = sm.describe_endpoint(EndpointName=endpoint_name)
     cfg = sm.describe_endpoint_config(EndpointConfigName=ep["EndpointConfigName"])
     model_name = cfg["ProductionVariants"][0]["ModelName"]
@@ -129,7 +128,7 @@ train_step = TrainingStep(
     cache_config=cache,
 )
 
-# -------- Step: Evaluate --------
+# -------- Step: Evaluate (write metrics.json) --------
 eval_prop = PropertyFile(name="EvalMetrics", output_name="metrics", path="metrics.json")
 
 eval_proc = SKLearnProcessor(
@@ -173,6 +172,13 @@ metrics = ModelMetrics(
     )
 )
 
+# Use JsonGet to read AUC from the evaluation PropertyFile
+auc_expr = JsonGet(
+    step_name=evaluate_step.name,
+    property_file=eval_prop,
+    json_path="auc"
+)
+
 register_step = RegisterModel(
     name="RegisterModel",
     estimator=est,
@@ -188,7 +194,7 @@ register_step = RegisterModel(
 
 gate_step = ConditionStep(
     name="QualityGate",
-    conditions=[ConditionGreaterThan(left=eval_prop.prop("auc"), right=AUCThreshold)],
+    conditions=[ConditionGreaterThan(left=auc_expr, right=AUCThreshold)],
     if_steps=[register_step],
     else_steps=[],
 )
