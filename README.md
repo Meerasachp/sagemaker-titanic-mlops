@@ -1,35 +1,46 @@
-# 🚀 SageMaker Titanic MLOps
+# 🛟 Titanic Survival — Your First **AWS SageMaker MLOps** Project (Pipelines + GitHub Actions) 
 
-![AWS](https://img.shields.io/badge/AWS-SageMaker-orange?logo=amazon-aws&logoColor=white)
-![MLOps](https://img.shields.io/badge/MLOps-Pipeline-blue)
+![AWS](https://img.shields.io/badge/AWS-SageMaker-FF9900?logo=amazon-aws&logoColor=white)
+![MLOps](https://img.shields.io/badge/MLOps-Pipeline-2088FF)
 
-
-End-to-end MLOps on **AWS SageMaker** using the Titanic dataset:
+End-to-end MLOps on **AWS SageMaker** using the Titanic dataset:  
 **data → preprocessing → training → evaluation → registry → deployment (endpoint) → monitoring → CI/CD**.
+
+✅ Data prep to S3  
+✅ SageMaker **Pipeline** (Preprocess → Train → Evaluate → Gate → Register)  
+✅ Model **Registry** (Pending approval)  
+✅ **Smoke** test against a real endpoint  
+✅ Monitoring-ready (data capture + Model Monitor helpers)
 
 ---
 
-## 📌 Phases (Roadmap)
+## 📊 Problem Statement
+Predict **survival** based on:
+
+- **Pclass**, **Sex**, **Age**, **SibSp**, **Parch**, **Fare**, **Embarked**
+- Model: **XGBoost (built-in, 1.7-1)**
+
+---
+
+## 🚀 Quick Start
 
 ### ✅ Phase 1 — Project Initialization
 - Local env & repo structure (`src/`, `pipelines/`, `.github/workflows/`)
 - `requirements.txt`, `.gitignore`
-- AWS access configured (IAM role for SageMaker jobs)
+- AWS access configured (IAM execution role for SageMaker jobs)
 
 **Quickstart**
-```bash
+
 git clone https://github.com/Meerasachp/sagemaker-titanic-mlops.git
 cd sagemaker-titanic-mlops
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 aws configure   # use us-east-1
 
-### ✅ Phase 2 — Data Ingestion (Feature engineering ready)
-Titanic CSV stored in S3 under your bucket.
+### ✅ Phase 2 — Data Ingestion (feature-engineering ready)
 
-Preprocess script expects label first column; writes train.csv & test.csv.
-
-**Quickstart**
+Titanic CSV stored in your S3 bucket.
+Preprocess expects label in first column; writes train.csv & test.csv.
 
 # Create a bucket you own (unique) and upload the CSV
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
@@ -37,70 +48,51 @@ BUCKET="sagemaker-us-east-1-${ACCOUNT}-mlops"
 aws s3api create-bucket --bucket "$BUCKET"
 aws s3 cp ./data/titanic.csv "s3://${BUCKET}/raw/titanic.csv"
 aws s3 ls "s3://${BUCKET}/raw/"
-ℹ️ Feature Store is optional for v1.0. Preprocess is feature-store compatible if you want to add it later.
+ℹ️ Feature Store is optional for v1.0; preprocess is feature-store compatible if you add it later.
 
 ### ✅ Phase 3 — Training & Evaluation (XGBoost)
-Training uses SageMaker built-in XGBoost (1.7-1)
 
-Evaluation step produces metrics.json with auc & accuracy.
+- Training uses SageMaker built-in XGBoost (1.7-1).
+- Evaluation produces metrics.json with auc & accuracy.
 
-Core scripts
-
-src/preprocess.py — reads CSV from input dir, writes:
-
+core scripts
+src/preprocess.py → reads CSV from input dir; writes:
 /opt/ml/processing/train/train.csv
-
 /opt/ml/processing/test/test.csv
-
-src/evaluate.py — loads model.tar.gz, computes metrics → /opt/ml/processing/output/metrics.json
+src/evaluate.py → loads model.tar.gz, computes metrics → /opt/ml/processing/output/metrics.json
 
 ### ✅ Phase 4 — Model Registry & Deployment
-Registered models go to Model Package Group (e.g., titanic-xgboost) with PendingManualApproval.
 
-A live endpoint is used by the CI Smoke test.
-
-Deployment scripts are optional; the endpoint can be managed via Studio or your existing infra.
-CI smoke step invokes the endpoint using boto3.
+- Registered models land in Model Package Group (e.g., titanic-xgboost) with PendingManualApproval.
+- A live endpoint is used by the CI Smoke test (boto3 invoke).
 
 ### ✅ Phase 5 — Monitoring
-Data capture & Model Monitor schedule (hourly) supported via helper scripts:
 
-src/enable_data_capture.py
-
-src/monitor_setup.py
-
-src/register_model.py (registers the deployed model artifact/image)
-
-Cost guardrails recommended: sampling ≤ 25% and S3 lifecycle (30d) for monitoring/ & datacapture/.
+- Data capture & Model Monitor schedule (hourly) supported via helpers:
+  src/enable_data_capture.py
+  src/monitor_setup.py
+  src/register_model.py
+ Cost guardrails: sampling ≤ 25% and S3 lifecycle (30d) for monitoring/ & datacapture/.
 
 ### ✅ Phase 6 — CI/CD Automation (GitHub Actions + SageMaker Pipelines)
-Smoke: invokes endpoint on push/PR
 
-SageMaker Pipeline: Preprocess → Train → Evaluate → Quality Gate (AUC) → Register
+Smoke: invokes endpoint on push/PR.
+SageMaker Pipeline: Preprocess → Train → Evaluate → Quality Gate (AUC) → Register.
+Gate defaults to AUC ≥ 0.80 (override via env).
+Instance types (safe defaults, override via env):
+   Processing/Eval: ml.t3.medium
+   Training (XGBoost allow-list): ml.m4.xlarge
+Pipeline file: pipelines/pipeline_up.py (defines & starts the run).
 
-Pipeline AUC gate defaults to 0.80 (configurable)
+### 🧰 Tech Stack
 
-Instance types (safe defaults; override via env):
+AWS SageMaker: Processing, Training (XGBoost), Pipelines, Model Registry, Endpoints
+CI/CD: GitHub Actions (smoke + pipeline jobs; OIDC supported)
+Storage & Logs: Amazon S3 (artifacts, capture, metrics), CloudWatch Logs
+Libraries: XGBoost, pandas, scikit-learn, boto3, SageMaker SDK
+Security: IAM execution role, OIDC role assumption for CI (no static keys), fork-PR secret gating
 
-Processing/Eval: ml.t3.medium
-
-Training (XGBoost allow-list): ml.m4.xlarge
-
-Pipeline file
-
-pipelines/pipeline_up.py — defines & starts the pipeline run
-
-⚙️ CI/CD (GitHub Actions)
-Workflow: .github/workflows/mlops.yml has two jobs:
-
-smoke — checks AWS gate, configures creds, invokes endpoint
-
-sagemaker-pipeline — creates/updates TitanicXGBPipeline and starts an execution
-
-
-🧱 Project Structure
-bash
-Copy code
+## 🧱 Project Structure
 sagemaker-titanic-mlops/
 ├── data/
 │   └── titanic.csv                  # example local dataset (uploaded to S3)
@@ -117,16 +109,14 @@ sagemaker-titanic-mlops/
 ├── requirements.txt
 └── README.md
 
-▶️ How to Run
+### ▶️ How to Run
+
 A) End-to-end via CI
 
-Push to main or click Actions → “MLOps Pipeline (Smoke)” → Run workflow
-
-Watch smoke logs (should print JSON prediction)
-
-Watch sagemaker-pipeline: it upserts & starts TitanicXGBPipeline
-
-In Studio → Pipelines, open the latest execution to see steps & metrics
+Push to main or open Actions → “MLOps Pipeline (Smoke)” → Run workflow
+Watch smoke logs (prints JSON prediction)
+Watch sagemaker-pipeline logs (upserts & starts TitanicXGBPipeline)
+In Studio → Pipelines, open latest execution to see steps & metrics
 
 B) Quick CLI checks
 
@@ -140,16 +130,11 @@ aws sagemaker list-model-packages \
   --model-package-group-name titanic-xgboost \
   --query "ModelPackageSummaryList[0].[ModelPackageArn,ModelApprovalStatus]"
 
-🧪 Example Prediction (from Smoke)
-json
-{"predictions": [{"score": 0.8977}]}
+  ### 🧪 Example Prediction (from Smoke)
 
+  {"predictions": [{"score": 0.8977}]}
 
-👤 Author
-Meerasa (Max) — DevOps / MLOps Engineer
-🔗 GitHub: https://github.com/Meerasachp
-
-
+Meerasa — DevOps / MLOps Engineer :-)
 
 
 
