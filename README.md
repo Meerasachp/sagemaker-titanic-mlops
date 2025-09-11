@@ -6,11 +6,12 @@
 End-to-end MLOps on **AWS SageMaker** using the Titanic dataset:  
 **data → preprocessing → training → evaluation → registry → deployment (endpoint) → monitoring → CI/CD**.
 
-✅ Data prep to S3  
-✅ SageMaker **Pipeline** (Preprocess → Train → Evaluate → Gate → Register)  
-✅ Model **Registry** (Pending approval)  
-✅ **Smoke** test against a real endpoint  
+✅ Data prep to S3
+✅ SageMaker Pipeline (Preprocess → Train → Evaluate → Gate → Register)
+✅ Model Registry (Pending/Manual approval by default)
+✅ Smoke test against a real endpoint
 ✅ Monitoring-ready (data capture + Model Monitor helpers)
+✅ OIDC for GitHub Actions (no long-lived keys)
 
 ---
 
@@ -21,6 +22,26 @@ Predict **survival** based on:
 - Model: **XGBoost (built-in, 1.7-1)**
 
 ---
+
+## 🧱 Repo Structure
+
+sagemaker-titanic-mlops/
+├── data/
+│   └── titanic.csv                     # sample local dataset (uploaded to S3)
+├── src/
+│   ├── preprocess.py                   # writes train/test (label first col, no header)
+│   ├── evaluate.py                     # writes metrics.json { auc, accuracy }
+│   ├── enable_data_capture.py          # optional: turn on endpoint capture
+│   ├── monitor_setup.py                # optional: Model Monitor schedule
+│   └── register_model.py               # optional: extra registry helpers
+├── pipelines/
+│   └── pipeline_up.py                  # defines & triggers SageMaker Pipeline
+├── .github/workflows/
+│   └── mlops.yml                       # smoke + pipeline jobs (OIDC supported)
+├── requirements.txt
+├── Makefile                         
+└── README.md
+
 
 ## 🚀 Quick Start
 
@@ -42,7 +63,7 @@ aws configure   # use us-east-1
 Titanic CSV stored in your S3 bucket.
 Preprocess expects label in first column; writes train.csv & test.csv.
 
-# Create a bucket you own (unique) and upload the CSV
+Create a bucket you own (unique) and upload the CSV
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 BUCKET="sagemaker-us-east-1-${ACCOUNT}-mlops"
 aws s3api create-bucket --bucket "$BUCKET"
@@ -92,22 +113,7 @@ Storage & Logs: Amazon S3 (artifacts, capture, metrics), CloudWatch Logs
 Libraries: XGBoost, pandas, scikit-learn, boto3, SageMaker SDK
 Security: IAM execution role, OIDC role assumption for CI (no static keys), fork-PR secret gating
 
-## 🧱 Project Structure
-sagemaker-titanic-mlops/
-├── data/
-│   └── titanic.csv                  # example local dataset (uploaded to S3)
-├── src/
-│   ├── preprocess.py                # writes train/test CSVs (headerless, label first col)
-│   ├── evaluate.py                  # writes metrics.json {auc, accuracy}
-│   ├── enable_data_capture.py       # optional monitoring helper
-│   ├── monitor_setup.py             # optional monitoring helper
-│   └── register_model.py            # optional registry helper
-├── pipelines/
-│   └── pipeline_up.py               # SageMaker Pipeline definition + start
-├── .github/workflows/
-│   └── mlops.yml                    # Smoke + Pipeline CI
-├── requirements.txt
-└── README.md
+
 
 ### ▶️ How to Run
 
@@ -133,6 +139,21 @@ aws sagemaker list-model-packages \
   ### 🧪 Example Prediction (from Smoke)
 
   {"predictions": [{"score": 0.8977}]}
+
+### 🧩 Known Gotchas / Troubleshooting
+
+ValidationError: Endpoint <name> of account <acct> not found
+Check region (us-east-1 vs others) and AWS profile.
+Confirm endpoint status is InService.
+Double-check the endpoint name (typos, suffixes).
+Invalid endpoint URL (double dot) like runtime.sagemaker..amazonaws.com
+Usually a malformed region var. Ensure AWS_REGION is set (e.g., us-east-1).
+In boto3, pass region_name explicitly in clients used by CI.
+S3 bucket errors
+Bucket names must be globally unique and match region.
+Use the --create-bucket-configuration only when region ≠ us-east-1.
+GitHub Actions credentials
+Prefer OIDC role. If using secrets, set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION and verify aws sts get-caller-identity.
 
 Meerasa — DevOps / MLOps Engineer :-)
 
