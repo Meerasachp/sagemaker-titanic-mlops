@@ -78,3 +78,72 @@ jobs:
           )
           print(resp["Body"].read().decode())
           PY
+
+  # -------------------------------
+  # NEW: Phase 6 - SageMaker Pipeline
+  # -------------------------------
+  sagemaker-pipeline:
+    needs: smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Gate again for forked PRs (no secrets there)
+      - name: Gate AWS steps
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
+            echo "run_aws=false" >> "$GITHUB_OUTPUT"
+            echo "This is a PR from a fork; skipping AWS steps (no secrets available)."
+          else
+            echo "run_aws=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sanity check secrets for pipeline
+        if: steps.gate.outputs.run_aws == 'true'
+        run: |
+          [ -n "${{ secrets.AWS_ACCESS_KEY_ID }}" ] || { echo "ERROR: Missing AWS_ACCESS_KEY_ID secret"; exit 1; }
+          [ -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ] || { echo "ERROR: Missing AWS_SECRET_ACCESS_KEY secret"; exit 1; }
+          # Optional: either SAGEMAKER_ROLE_ARN or SAGEMAKER_ENDPOINT_NAME (to infer role) is needed
+          if [ -z "${{ secrets.SAGEMAKER_ROLE_ARN }}" ] && [ -z "${{ secrets.SAGEMAKER_ENDPOINT_NAME }}" ]; then
+            echo "ERROR: Provide SAGEMAKER_ROLE_ARN or SAGEMAKER_ENDPOINT_NAME secret for pipeline role inference."
+            exit 1
+          fi
+          echo "Secrets present (values are masked)."
+
+      - name: Set up Python
+        if: steps.gate.outputs.run_aws == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        if: steps.gate.outputs.run_aws == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install boto3 sagemaker pandas scikit-learn xgboost
+          fi
+
+      - name: Configure AWS credentials
+        if: steps.gate.outputs.run_aws == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Create/Update & Start SageMaker Pipeline
+        if: steps.gate.outputs.run_aws == 'true'
+        env:
+          AWS_REGION: us-east-1
+          # Either provide this (preferred)...
+          SAGEMAKER_ROLE_ARN: ${{ secrets.SAGEMAKER_ROLE_ARN }}
+          # ...or the script will infer role from this endpoint's model role:
+          SAGEMAKER_ENDPOINT_NAME: ${{ secrets.SAGEMAKER_ENDPOINT_NAME }}
+        run: |
+          python pipelines/pipeline_up.py
+
