@@ -1,3 +1,4 @@
+# pipelines/pipeline_up.py
 import os
 import boto3
 import sagemaker
@@ -22,17 +23,20 @@ from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.step_collections import RegisterModel
 
 
+# -------- Region / Sessions --------
 REGION = os.getenv("AWS_REGION", "us-east-1")
 sess: Session = sagemaker.Session(boto_session=boto3.Session(region_name=REGION))
 sm = boto3.client("sagemaker", region_name=REGION)
 
 # -------- Instance types (override via env if needed) --------
+# XGBoost built-in training only supports certain types; ml.m4.xlarge is allowed.
 PROC_INSTANCE_TYPE = os.getenv("PROC_INSTANCE_TYPE", "ml.t3.medium")
 EVAL_INSTANCE_TYPE = os.getenv("EVAL_INSTANCE_TYPE", PROC_INSTANCE_TYPE)
-TRAIN_INSTANCE_TYPE = os.getenv("TRAIN_INSTANCE_TYPE", "ml.c5.large")
+TRAIN_INSTANCE_TYPE = os.getenv("TRAIN_INSTANCE_TYPE", "ml.m4.xlarge")
 
 
 def infer_role_from_endpoint(endpoint_name: str) -> str:
+    """Infer the execution role from the currently deployed model behind an endpoint."""
     ep = sm.describe_endpoint(EndpointName=endpoint_name)
     cfg = sm.describe_endpoint_config(EndpointConfigName=ep["EndpointConfigName"])
     model_name = cfg["ProductionVariants"][0]["ModelName"]
@@ -65,6 +69,7 @@ AUCThreshold = ParameterFloat(
     default_value=float(os.getenv("AUC_THRESHOLD", "0.80")),
 )
 
+# Enable caching for faster subsequent runs
 cache = CacheConfig(enable_caching=True, expire_after="30d")
 
 # -------- Step: Preprocess (uses YOUR src/preprocess.py) --------
@@ -72,7 +77,7 @@ sk_proc = SKLearnProcessor(
     framework_version="1.2-1",
     role=ROLE_ARN,
     instance_count=1,
-    instance_type=PROC_INSTANCE_TYPE,  # patched from ml.m5.large
+    instance_type=PROC_INSTANCE_TYPE,
     sagemaker_session=sess,
 )
 
@@ -103,7 +108,7 @@ est = Estimator(
     image_uri=xgb_image,
     role=ROLE_ARN,
     instance_count=1,
-    instance_type=TRAIN_INSTANCE_TYPE,  # patched from ml.m5.xlarge
+    instance_type=TRAIN_INSTANCE_TYPE,  # default: ml.m4.xlarge (allowed)
     output_path=f"s3://{sess.default_bucket()}/xgb/output/",
     sagemaker_session=sess,
     hyperparameters={
@@ -140,7 +145,7 @@ eval_proc = SKLearnProcessor(
     framework_version="1.2-1",
     role=ROLE_ARN,
     instance_count=1,
-    instance_type=EVAL_INSTANCE_TYPE,  # patched from ml.m5.large
+    instance_type=EVAL_INSTANCE_TYPE,
     sagemaker_session=sess,
 )
 
@@ -177,6 +182,7 @@ metrics = ModelMetrics(
     )
 )
 
+# Pull AUC from the metrics.json written by Evaluate
 auc_expr = JsonGet(step_name=evaluate_step.name, property_file=eval_prop, json_path="auc")
 
 register_step = RegisterModel(
@@ -211,5 +217,4 @@ if __name__ == "__main__":
     pipeline.upsert(role_arn=ROLE_ARN)
     execution = pipeline.start()
     print("Started execution:", execution.arn)
-
 
