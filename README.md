@@ -1,4 +1,4 @@
-# 🛟 Titanic Survival — Your First **AWS SageMaker MLOps** Project (Pipelines + GitHub Actions) 
+# 🛟 Titanic Survival — **AWS SageMaker MLOps** Project (Pipelines + GitHub Actions) 
 
 ![AWS](https://img.shields.io/badge/AWS-SageMaker-FF9900?logo=amazon-aws&logoColor=white)
 ![MLOps](https://img.shields.io/badge/MLOps-Pipeline-2088FF)
