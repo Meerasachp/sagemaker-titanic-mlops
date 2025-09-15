@@ -42,6 +42,13 @@ sagemaker-titanic-mlops/
 ├── Makefile                         
 └── README.md
 
+## To start the project
+
+git clone https://github.com/Meerasachp/sagemaker-titanic-mlops.git
+cd sagemaker-titanic-mlops
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+aws configure   # use us-east-1
 
 ## 🚀 Quick Start
 
@@ -49,14 +56,6 @@ sagemaker-titanic-mlops/
 - Local env & repo structure (`src/`, `pipelines/`, `.github/workflows/`)
 - `requirements.txt`, `.gitignore`
 - AWS access configured (IAM execution role for SageMaker jobs)
-
-**Quickstart**
-
-git clone https://github.com/Meerasachp/sagemaker-titanic-mlops.git
-cd sagemaker-titanic-mlops
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-aws configure   # use us-east-1
 
 ### ✅ Phase 2 — Data Ingestion (feature-engineering ready)
 
@@ -93,7 +92,7 @@ src/evaluate.py → loads model.tar.gz, computes metrics → /opt/ml/processing/
   src/enable_data_capture.py
   src/monitor_setup.py
   src/register_model.py
- Cost guardrails: sampling ≤ 25% and S3 lifecycle (30d) for monitoring/ & datacapture/.
+  Cost guardrails: sampling ≤ 25% and S3 lifecycle (30d) for monitoring/ & datacapture/.
 
 ### ✅ Phase 6 — CI/CD Automation (GitHub Actions + SageMaker Pipelines)
 
@@ -101,8 +100,8 @@ Smoke: invokes endpoint on push/PR.
 SageMaker Pipeline: Preprocess → Train → Evaluate → Quality Gate (AUC) → Register.
 Gate defaults to AUC ≥ 0.80 (override via env).
 Instance types (safe defaults, override via env):
-   Processing/Eval: ml.t3.medium
-   Training (XGBoost allow-list): ml.m4.xlarge
+   - Processing/Eval: ml.t3.medium
+   - Training (XGBoost allow-list): ml.m4.xlarge
 Pipeline file: pipelines/pipeline_up.py (defines & starts the run).
 
 ### 🧰 Tech Stack
@@ -118,20 +117,18 @@ Security: IAM execution role, OIDC role assumption for CI (no static keys), fork
 ### ▶️ How to Run
 
 A) End-to-end via CI
-
 Push to main or open Actions → “MLOps Pipeline (Smoke)” → Run workflow
 Watch smoke logs (prints JSON prediction)
 Watch sagemaker-pipeline logs (upserts & starts TitanicXGBPipeline)
 In Studio → Pipelines, open latest execution to see steps & metrics
 
 B) Quick CLI checks
-
-##Latest pipeline execution status
+#Latest pipeline execution status
 aws sagemaker list-pipeline-executions \
   --pipeline-name TitanicXGBPipeline --max-results 1 \
   --query "PipelineExecutionSummaries[0].[PipelineExecutionArn,PipelineExecutionStatus]"
 
-##Latest registered model package 
+#Latest registered model package 
 aws sagemaker list-model-packages \
   --model-package-group-name titanic-xgboost \
   --query "ModelPackageSummaryList[0].[ModelPackageArn,ModelApprovalStatus]"
@@ -158,8 +155,4 @@ aws sagemaker list-model-packages \
 
 
 ## Meerasa — DevOps / MLOps Engineer :-)
-
-
-
-
 
