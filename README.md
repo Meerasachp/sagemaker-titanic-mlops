@@ -43,6 +43,7 @@ sagemaker-titanic-mlops/
 ├── Makefile                         
 └── README.md
 
+
 ▶️ To Start the Project 
 
 git clone https://github.com/Meerasachp/sagemaker-titanic-mlops.git
@@ -51,7 +52,7 @@ python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 aws configure   # use us-east-1
 
-🚀 Quick Start
+🚀 Quick Start 
 
 ✅Phase 1 — Project Initialization
 Local env & repo structure (src/, pipelines/, .github/workflows/)
