@@ -126,12 +126,12 @@ In Studio → Pipelines, open latest execution to see steps & metrics
 
 B) Quick CLI checks
 
-# Latest pipeline execution status
+Latest pipeline execution status
 aws sagemaker list-pipeline-executions \
   --pipeline-name TitanicXGBPipeline --max-results 1 \
   --query "PipelineExecutionSummaries[0].[PipelineExecutionArn,PipelineExecutionStatus]"
 
-# Latest registered model package
+Latest registered model package
 aws sagemaker list-model-packages \
   --model-package-group-name titanic-xgboost \
   --query "ModelPackageSummaryList[0].[ModelPackageArn,ModelApprovalStatus]"
@@ -140,10 +140,9 @@ aws sagemaker list-model-packages \
 
   {"predictions": [{"score": 0.8977}]}
 
-### 🧩 Known Gotchas / Troubleshooting
+# 🧩 Known Gotchas / Troubleshooting
 
-ValidationError: Endpoint <name> of account <acct> not found
-Check region (us-east-1 vs others) and AWS profile.
+ValidationError: Endpoint <name> of account <acct> not found | Check region (us-east-1 vs others) and AWS profile.
 Confirm endpoint status is InService.
 Double-check the endpoint name (typos, suffixes).
 Invalid endpoint URL (double dot) like runtime.sagemaker..amazonaws.com
@@ -154,6 +153,8 @@ Bucket names must be globally unique and match region.
 Use the --create-bucket-configuration only when region ≠ us-east-1.
 GitHub Actions credentials
 Prefer OIDC role. If using secrets, set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION and verify aws sts get-caller-identity.
+
+
 
 Meerasa — DevOps / MLOps Engineer :-)
 
