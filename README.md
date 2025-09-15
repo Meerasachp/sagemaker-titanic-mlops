@@ -53,7 +53,7 @@ aws configure   # use us-east-1
 
 🚀 Quick Start
 
-## ✅ Phase 1 — Project Initialization
+✅Phase 1 — Project Initialization
 Local env & repo structure (src/, pipelines/, .github/workflows/)
 requirements.txt, .gitignore
 AWS access configured (IAM execution role for SageMaker jobs)
@@ -70,7 +70,6 @@ aws s3 ls "s3://${BUCKET}/raw/"
 ✅ Phase 4 — Model Registry & Deployment
 Data capture & Model Monitor (hourly) via helpers:
 src/enable_data_capture.py, src/monitor_setup.py, src/register_model.py
-
 Cost guardrails: sampling ≤ 25% + S3 lifecycle (30d).
 
 ✅ Phase 6 — CI/CD Automation (GitHub Actions + SageMaker Pipelines)
@@ -80,8 +79,7 @@ Instance defaults:
    Processing/Eval → ml.t3.medium
    Training → ml.m4.xlarge
 
-## 🧰 Tech Stack
-
+## 🧰 Tech Stack:
 AWS SageMaker: Processing, Training, Pipelines, Model Registry, Endpoints
 CI/CD: GitHub Actions (smoke + pipeline jobs; OIDC supported)
 Storage/Logs: Amazon S3, CloudWatch Logs
@@ -112,7 +110,6 @@ aws sagemaker list-model-packages \
 
 
 # 🧩 Known Gotchas / Troubleshooting
-
 ValidationError: Endpoint not found
 → Check region/profile; confirm endpoint is InService; no typos; region var set.
 
