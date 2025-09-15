@@ -137,7 +137,7 @@ aws sagemaker list-model-packages \
 
   {"predictions": [{"score": 0.8977}]}
 
-# 🧩 Known Gotchas / Troubleshooting
+## 🧩 Known Gotchas / Troubleshooting ##
 
 --> ValidationError: Endpoint <name> of account <acct> not found 
 --> Check region (us-east-1 vs others) and AWS profile.
